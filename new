@@ -1,0 +1,119 @@
+#!/usr/bin/bash
+set -o errexit
+set -o nounset
+
+NEW_TEMPLATE_FILENAME="${NEW_TEMPLATE_FILENAME:-new.template}"
+NEW_TEMPLATE_PATHS=\
+"${NEW_TEMPLATE_PATHS:-/usr/share/new/templates\
+:$HOME/.local/share/new/templates}"
+NEW_TEMPLATE_DEFAULTS=\
+"${NEW_TEMPLATE_DEFAULTS:-$HOME/.local/share/new/defaults}"
+NEW_TEMPLATE_OUTPUT="$PWD"
+
+declare    Ifs="$IFS"
+declare    TemplateName   # templatename
+declare    TemplateFile   # /absolute/path/to/templatename/new.template
+declare -A Options        # ([<option>]=<value> ...)
+declare -A Defaults       # ([<variable>]=<value> ...)
+declare -A Answers        # ([<variable>]=<value> ...)
+
+### get Options ################################################################
+while getopts ":hls" _opt $@; do
+   case $_opt in
+      h) Options["help"]=1;;
+      l) Options["list"]=1;;
+      s) Options["simulate"]="echo";;
+      \?) echo "!! Unknown option: -$OPTARG"; exit 1;;
+   esac
+done
+shift $((OPTIND-1))
+
+### print usage ################################################################
+if [[ -n "${Options[help]:-}" ]]; then
+   echo "Usage:"
+   echo "  new [OPTION] [TEMPLATE]"
+   echo "Options:"
+   echo "  -h  print usage information"
+   echo "  -l  list available templates"
+   echo "  -s  simulate actions"
+   exit
+fi
+
+### list templates #############################################################
+if [[ -n "${Options[list]:-}" ]]; then
+   IFS=:; for _p in ${NEW_TEMPLATE_PATHS[@]}; do
+      echo "Templates in '$_p'"
+      IFS="$Ifs"; for _f in "$_p"/*; do
+         [[ -d "$_f" ]] && echo "  ${_f##*/}"
+      done
+   done; IFS="$Ifs"
+   exit
+fi
+
+### get TemplateName ##########################################################
+[[ $# -lt 1 ]] && echo "!! No template given." && exit 2
+[[ $# -gt 1 ]] && echo "!! Too many templates given." && exit 3
+TemplateName=$@
+
+### find TemplateFile ##########################################################
+IFS=:; for _p in ${NEW_TEMPLATE_PATHS[@]}; do
+   if [[ -r "$_p/$TemplateName/$NEW_TEMPLATE_FILENAME" ]]; then
+      TemplateFile="$_p/$TemplateName/$NEW_TEMPLATE_FILENAME"
+   fi
+done; IFS="$Ifs"
+if [[ ! -r "${TemplateFile:-}" ]]; then
+   echo "!! Template not found."
+   exit 5
+fi
+
+### read Defaults ##############################################################
+if [[ -r "$NEW_TEMPLATE_DEFAULTS" ]]; then
+   _nsexp='^\[(.*)\]'
+   _varexp='(.*)=(.*)'
+   _curns=
+   while read _line; do
+      if [[ "$_line" =~ $_nsexp ]]; then
+         _curns="${BASH_REMATCH[1]}"
+         continue
+      fi
+      if [[ "$_curns" == "$TemplateName" ]] || [[ -z "$_curns" ]]; then
+         if [[ "$_line" =~ $_varexp ]]; then
+            Defaults["${BASH_REMATCH[1]}"]="${BASH_REMATCH[2]}"
+         fi
+      fi
+   done < "$NEW_TEMPLATE_DEFAULTS"
+fi
+
+### get Answers ################################################################
+while read _line; do
+   [[ -z "$_line" ]] || [[ "$_line" == \#* ]] && continue
+   IFS=: read -a _var <<< "$_line"; IFS="$Ifs"
+   read -e -i "${Defaults["${_var[0]}"]:-}" \
+        -p "${_var[1]}: " Answers["${_var[0]}"] < /dev/tty
+done < "$TemplateFile"
+
+### create files ###############################################################
+cd "${TemplateFile%/*}"
+_sim=${Options["simulate"]:-}
+shopt -s globstar
+for _path in **
+do
+   [[ "$_path" == "$NEW_TEMPLATE_FILENAME" ]] && continue
+   _rnpath="$_path"
+   for _var in ${!Answers[@]}; do
+      _rnpath="${_rnpath//${_var}/${Answers[$_var]}}"
+   done
+   if [[ -d "$_path" ]]; then
+      $_sim mkdir "$NEW_TEMPLATE_OUTPUT/$_rnpath"
+      $_sim chmod --reference="$_path" "$NEW_TEMPLATE_OUTPUT/$_rnpath"
+   elif [[ -f "$_path" ]]; then
+      $_sim cp "$_path" "$NEW_TEMPLATE_OUTPUT/$_rnpath"
+      for _var in ${!Answers[@]}; do
+         $_sim sed -i "s/${_var}/${Answers[$_var]}/g" \
+            "$NEW_TEMPLATE_OUTPUT/$_rnpath"
+      done
+   else
+      echo "WTF is '$_path'? ignoring it!"
+   fi
+done
+
