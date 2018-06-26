@@ -48,7 +48,7 @@ myapp/
 
 ## Dependencies
 
-Tools that need to be installed in order to use `new`.
+### Runtime
 
   * [Bash](http://www.gnu.org/software/bash/bash.html)
     for the core script
@@ -56,6 +56,18 @@ Tools that need to be installed in order to use `new`.
     for copying files and creating directories
   * [sed](http://www.gnu.org/software/sed/)
     for replacing text inside files
+
+### Testing
+
+  * [make](https://www.gnu.org/software/make/) for running tests
+  * [expect](https://www.nist.gov/services-resources/software/expect) for test input
+  * [diff](https://www.gnu.org/software/diffutils) for comparing results
+
+## Testing
+
+```
+make test
+```
 
 ## Licence
 
@@ -67,5 +79,5 @@ This file is part of `new`.
 
 `new` is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with `new`.  If not, see <http://www.gnu.org/licenses/>.
 

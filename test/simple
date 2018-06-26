@@ -1,0 +1,29 @@
+#!/usr/bin/env expect
+
+set mydir [ file dirname [ file normalize [ info script ] ] ]
+
+# clean up
+file delete -force result
+file mkdir result
+
+# variables for `new`
+set ::env(NEW_TEMPLATE_PATHS) "$mydir/template"
+set ::env(NEW_TEMPLATE_OUTPUT) "$mydir/result"
+
+# run `new`
+spawn ../new simple
+expect -exact "Dir: "
+send -- "foo\r"
+expect -exact "Name: "
+send -- "bar\r"
+expect -exact "Version: "
+send -- "1.0\r"
+expect eof
+
+# check artifacts
+if {[catch {exec -- diff -rq "$mydir/result" "$mydir/sample/simple"} result] == 0} {
+	exit 0
+} else {
+	puts $result
+	exit 1
+}
