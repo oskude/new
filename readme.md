@@ -8,7 +8,7 @@ _It uses a template directory/file structure,_
 webapp/
   new.template
   │ §dir§:Dir
-  │ §project§:Name
+  │ §name§:Name
   │ §version§:Version
   ╰─────────────────────────────
   §dir§/
