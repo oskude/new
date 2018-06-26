@@ -3,12 +3,10 @@ set -o errexit
 set -o nounset
 
 NEW_TEMPLATE_FILENAME="${NEW_TEMPLATE_FILENAME:-new.template}"
-NEW_TEMPLATE_PATHS=\
-"${NEW_TEMPLATE_PATHS:-/usr/share/new/templates\
+NEW_TEMPLATE_PATHS="${NEW_TEMPLATE_PATHS:-/usr/share/new/templates\
 :$HOME/.local/share/new/templates}"
-NEW_TEMPLATE_DEFAULTS=\
-"${NEW_TEMPLATE_DEFAULTS:-$HOME/.local/share/new/defaults}"
-NEW_TEMPLATE_OUTPUT="$PWD"
+NEW_TEMPLATE_DEFAULTS="${NEW_TEMPLATE_DEFAULTS:-$HOME/.local/share/new/defaults}"
+NEW_TEMPLATE_OUTPUT="${NEW_TEMPLATE_OUTPUT:-$PWD}"
 
 declare    Ifs="$IFS"
 declare    TemplateName   # templatename
